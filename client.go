@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
+	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/region"
 	dns "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/dns/v2"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/dns/v2/model"
 	dnsRegion "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/dns/v2/region"
@@ -17,10 +18,6 @@ func (p *Provider) init() error {
 		return nil
 	}
 
-	if p.Region == "" {
-		p.Region = "cn-east-3"
-	}
-
 	auth, err := basic.NewCredentialsBuilder().
 		WithAk(p.AccessKeyId).
 		WithSk(p.SecretAccessKey).
@@ -29,15 +26,23 @@ func (p *Provider) init() error {
 		return err
 	}
 
-	region, err := dnsRegion.SafeValueOf(p.Region)
-	if err != nil {
-		return err
+	var region *region.Region
+	if p.Region != "" {
+		region, err = dnsRegion.SafeValueOf(p.Region)
+		if err != nil {
+			return err
+		}
 	}
 
-	hcClient, err := dns.DnsClientBuilder().
-		WithRegion(region).
-		WithCredential(auth).
-		SafeBuild()
+	builder := dns.DnsClientBuilder().WithCredential(auth)
+	if region == nil {
+		// https://developer.huaweicloud.com/endpoint?DNS
+		builder.WithEndpoints([]string{"https://dns.myhuaweicloud.com"})
+	} else {
+		builder.WithRegion(region)
+	}
+
+	hcClient, err := builder.SafeBuild()
 	if err != nil {
 		return err
 	}
