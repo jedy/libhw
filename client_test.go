@@ -108,7 +108,7 @@ func TestTXT(t *testing.T) {
 func TestSubdomain(t *testing.T) {
 	const Sub = "jedy.test."
 	top, sub := toTopDomain(Sub + TOP_DOMAIN)
-	if top != TOP_DOMAIN || sub != Sub {
+	if top != TOP_DOMAIN || sub != Sub[:len(Sub)-1] {
 		t.Fatalf("unexpected result: [%s], [%s]", top, sub)
 	}
 	top, sub = toTopDomain(TOP_DOMAIN)
