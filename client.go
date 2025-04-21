@@ -13,6 +13,13 @@ import (
 	"github.com/libdns/libdns"
 )
 
+type libRR = libdns.RR
+
+type Record struct {
+	libRR
+	ID string
+}
+
 func (p *Provider) init() error {
 	if p.client != nil {
 		return nil
@@ -54,9 +61,9 @@ func (p *Provider) init() error {
 func parseRecordSet(set model.ListRecordSets) []libdns.Record {
 	records := make([]libdns.Record, 0, len(*set.Records))
 
-	var ttl int32
+	var ttl time.Duration
 	if set.Ttl != nil {
-		ttl = *set.Ttl
+		ttl = time.Duration(*set.Ttl) * time.Second
 	}
 	name := libdns.RelativeName(getString(set.Name), getString(set.ZoneName))
 	for _, value := range *set.Records {
@@ -64,12 +71,14 @@ func parseRecordSet(set model.ListRecordSets) []libdns.Record {
 		if t == "TXT" {
 			value = unquote(value)
 		}
-		records = append(records, libdns.Record{
-			ID:    getString(set.Id),
-			Name:  name,
-			Value: value,
-			Type:  t,
-			TTL:   time.Duration(ttl) * time.Second,
+		records = append(records, Record{
+			libRR: libdns.RR{
+				Name: name,
+				Data: value,
+				Type: t,
+				TTL:  ttl,
+			},
+			ID: getString(set.Id),
 		})
 	}
 	return records
@@ -77,15 +86,16 @@ func parseRecordSet(set model.ListRecordSets) []libdns.Record {
 
 func parseLibdnsRecord(zone string, r libdns.Record) model.ListRecordSets {
 	var s model.ListRecordSets
-	ttl := int32(r.TTL / time.Second)
+	rr := r.RR()
+	ttl := int32(rr.TTL / time.Second)
 	if ttl > 0 {
 		s.Ttl = &ttl
 	}
-	t := r.Type
+	t := rr.Type
 	s.Type = &t
-	name := libdns.AbsoluteName(r.Name, zone)
+	name := libdns.AbsoluteName(rr.Name, zone)
 	s.Name = &name
-	v := r.Value
+	v := rr.Data
 	if t == "TXT" {
 		v = quote(v)
 	}
@@ -159,12 +169,11 @@ func (p *Provider) createRecord(zoneID string, record libdns.Record, zone string
 		ZoneId: zoneID,
 		Body:   &requestBody,
 	}
-	response, err := p.client.CreateRecordSet(request)
+	_, err := p.client.CreateRecordSet(request)
 	if err != nil {
 		return record, err
 	}
 
-	record.ID = *response.Id
 	return record, nil
 }
 
@@ -180,11 +189,10 @@ func (p *Provider) updateRecord(zone, zoneID, recordSetID string, record libdns.
 			Ttl:     recordSet.Ttl,
 		},
 	}
-	response, err := p.client.UpdateRecordSet(request)
+	_, err := p.client.UpdateRecordSet(request)
 	if err != nil {
-		return record, nil
+		return record, err
 	}
-	record.ID = *response.Id
 	return record, nil
 }
 

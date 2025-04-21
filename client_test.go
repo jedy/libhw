@@ -2,6 +2,7 @@ package libhw
 
 import (
 	"context"
+	"net/netip"
 	"os"
 	"testing"
 
@@ -22,7 +23,8 @@ func TestShow(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, r := range rs {
-		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Value)
+		r := r.RR()
+		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Data)
 	}
 }
 
@@ -31,18 +33,19 @@ func TestCreate(t *testing.T) {
 		AccessKeyId:     AK,
 		SecretAccessKey: SK,
 	}
+	ip, _ := netip.ParseAddr("1.2.3.4")
 	rs, err := p.AppendRecords(context.Background(), TOP_DOMAIN, []libdns.Record{
-		{
-			Type:  "A",
-			Name:  "jedytest",
-			Value: "1.2.3.4",
+		libdns.Address{
+			Name: "jedytest",
+			IP:   ip,
 		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, r := range rs {
-		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Value)
+		r := r.RR()
+		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Data)
 	}
 }
 
@@ -51,18 +54,19 @@ func TestSet(t *testing.T) {
 		AccessKeyId:     AK,
 		SecretAccessKey: SK,
 	}
+	ip, _ := netip.ParseAddr("192.168.1.1")
 	rs, err := p.SetRecords(context.Background(), TOP_DOMAIN, []libdns.Record{
-		{
-			Type:  "A",
-			Name:  "jedytest",
-			Value: "192.168.1.1",
+		libdns.Address{
+			Name: "jedytest",
+			IP:   ip,
 		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, r := range rs {
-		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Value)
+		r := r.RR()
+		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Data)
 	}
 }
 
@@ -72,8 +76,7 @@ func TestDelete(t *testing.T) {
 		SecretAccessKey: SK,
 	}
 	rs, err := p.DeleteRecords(context.Background(), TOP_DOMAIN, []libdns.Record{
-		{
-			Type: "A",
+		libdns.Address{
 			Name: "jedytest",
 		},
 	})
@@ -81,7 +84,8 @@ func TestDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, r := range rs {
-		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Value)
+		r := r.RR()
+		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Data)
 	}
 }
 
@@ -91,17 +95,17 @@ func TestTXT(t *testing.T) {
 		SecretAccessKey: SK,
 	}
 	rs, err := p.AppendRecords(context.Background(), TOP_DOMAIN, []libdns.Record{
-		{
-			Type:  "TXT",
-			Name:  "jedytest",
-			Value: "aaa_bbb_ccc",
+		libdns.TXT{
+			Name: "jedytest",
+			Text: "aaa_bbb_ccc",
 		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, r := range rs {
-		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Value)
+		r := r.RR()
+		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Data)
 	}
 }
 
@@ -122,23 +126,23 @@ func TestChangeSub(t *testing.T) {
 		AccessKeyId:     AK,
 		SecretAccessKey: SK,
 	}
+	ip, _ := netip.ParseAddr("1.2.3.4")
 	rs, err := p.AppendRecords(context.Background(), "jedydemo."+TOP_DOMAIN, []libdns.Record{
-		{
-			Type:  "A",
-			Name:  "jedytest",
-			Value: "1.2.3.4",
+		libdns.Address{
+			Name: "jedytest",
+			IP:   ip,
 		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, r := range rs {
-		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Value)
+		r := r.RR()
+		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Data)
 	}
 
 	rs, err = p.DeleteRecords(context.Background(), "jedydemo."+TOP_DOMAIN, []libdns.Record{
-		{
-			Type: "A",
+		libdns.Address{
 			Name: "jedytest",
 		},
 	})
@@ -146,6 +150,7 @@ func TestChangeSub(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, r := range rs {
-		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Value)
+		r := r.RR()
+		t.Logf("%s[%s]: %s", r.Name, r.Type, r.Data)
 	}
 }

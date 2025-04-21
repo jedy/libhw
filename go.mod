@@ -4,7 +4,7 @@ go 1.22.1
 
 require (
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.99
-	github.com/libdns/libdns v0.2.2
+	github.com/libdns/libdns v1.0.0-beta.1
 )
 
 require (

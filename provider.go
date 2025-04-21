@@ -34,7 +34,6 @@ func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record
 	if err != nil {
 		return nil, err
 	}
-
 	return records, nil
 }
 
@@ -63,12 +62,13 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 	}
 	var deletedRecords []libdns.Record
 
-	for _, record := range records {
+	for _, r := range records {
+		record := r.RR()
 		if sub != "" {
 			record.Name = record.Name + "." + sub
 		}
 		found, r := findRecord(curRecords, record)
-		if !found || (record.Value != "" && r.Value != record.Value) {
+		if !found || (record.Data != "" && r.Data != record.Data) {
 			continue
 		}
 		err := p.deleteRecord(zoneID, r.ID)
@@ -101,7 +101,8 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 		return nil, err
 	}
 
-	for _, record := range records {
+	for _, r := range records {
+		record := r.RR()
 		if sub != "" {
 			record.Name = record.Name + "." + sub
 		}
@@ -126,13 +127,14 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 }
 
 // findRecord 查询name和type相同的记录
-func findRecord(records []libdns.Record, record libdns.Record) (bool, libdns.Record) {
+func findRecord(records []libdns.Record, record libdns.RR) (bool, Record) {
 	for _, r := range records {
+		r := r.(Record)
 		if r.Name == record.Name && r.Type == record.Type {
 			return true, r
 		}
 	}
-	return false, libdns.Record{}
+	return false, Record{}
 }
 
 func toTopDomain(zone string) (top string, sub string) {
